@@ -1,5 +1,6 @@
 package sample;
 import classes.*;
+import crypto.Algorithm;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -7,13 +8,11 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.Text;
 import javafx.stage.*;
+import serialization.Serializer;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -29,7 +28,8 @@ public class MainController {
     public ComboBox<String> durationInput;
     public ComboBox<String> octaveInput;
 
-    public Composition composition;
+    private Composition composition;
+    public CheckBox pluginCheckBox;
 
     public void initialize(){
         melodyCanvasesList.setFocusTraversable(false);
@@ -59,7 +59,7 @@ public class MainController {
         updateLists();
     }
 
-    public void updateLists(){
+    private void updateLists(){
         melodyCanvasesList.setItems(composition.getMelody().getStaffCanvases());
         harmonyCanvasesList.setItems(composition.getHarmony().getStaffCanvases());
     }
@@ -144,9 +144,7 @@ public class MainController {
         gridPane.add(addChord, 0, 4);
 
         Button cancelButton = new Button("Cancel");
-        cancelButton.setOnAction(event -> {
-            stage.close();
-        });
+        cancelButton.setOnAction(event -> stage.close());
 
         gridPane.add(cancelButton, 2, 4);
 
@@ -158,21 +156,52 @@ public class MainController {
 //        updateLists();
     }
 
-    public void save(ActionEvent actionEvent) {
-        Stage currStage = (Stage) harmonyCanvasesList.getScene().getWindow();
+    private File openPluginFile(Stage currStage){
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Pick encryption plugin");
+
+        return fileChooser.showOpenDialog(currStage);
+    }
+
+
+    private File saveFile(Stage currStage){
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save composition");
         FileChooser.ExtensionFilter extFiler = new FileChooser.ExtensionFilter("MM files, XML files (*.mm), (*.xml)","*.mm", "*.xml");
         fileChooser.getExtensionFilters().add(extFiler);
 
-        File file = fileChooser.showSaveDialog(currStage);
-        if(file.getName().contains(".xml")) {
+        return fileChooser.showSaveDialog(currStage);
+    }
+
+    public void save(ActionEvent actionEvent) {
+        Stage currStage = (Stage) harmonyCanvasesList.getScene().getWindow();
+
+        File file = saveFile(currStage);
+
+        Serializer.serialize(composition,file);
+
+   /*     if(file.getName().contains(".xml")) {
             Serializer.serializeXML(composition,file);
         }else if (file.getName().contains(".mm")){
             Serializer.serialize(composition, file);
         } else
-            Serializer.serialize(composition, new File(file.getAbsolutePath() + ".mm"));
+            Serializer.serialize(composition, new File(file.getAbsolutePath() + ".mm"));*/
+
+        if(pluginCheckBox.isSelected()){
+            try {
+                File encryptionPlugin = openPluginFile(currStage);
+
+                Algorithm algorithm = PluginLoader.load(encryptionPlugin.getAbsolutePath());
+
+                algorithm.encrypt(file);
+
+            } catch (NullPointerException e){
+                e.printStackTrace();
+            }
+
+        }
 
     }
 }

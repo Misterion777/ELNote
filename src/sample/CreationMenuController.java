@@ -1,6 +1,7 @@
 package sample;
 
 import classes.*;
+import crypto.Algorithm;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -9,9 +10,11 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.stage.*;
+import serialization.Serializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +26,7 @@ public class CreationMenuController {
     public TextField bpmInput;
     public ComboBox<String> keyInput;
     public ComboBox<String> noteInput;
+    public CheckBox pluginCheckBox;
 
 
     public void initialize(){
@@ -33,12 +37,9 @@ public class CreationMenuController {
 
 
     private void setBpmInputListener(){
-        bpmInput.textProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                if (!newValue.matches("\\d*")){
-                    bpmInput.setText(newValue.replaceAll("[^\\d]",""));
-                }
+        bpmInput.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (!newValue.matches("\\d*")){
+                bpmInput.setText(newValue.replaceAll("[^\\d]",""));
             }
         });
         bpmInput.setText("120");
@@ -106,6 +107,13 @@ public class CreationMenuController {
     }
 
 
+    private File loadPlugin(Stage currStage){
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open decryption plugin");
+
+        return fileChooser.showOpenDialog(currStage);
+    }
+
     public void load(ActionEvent actionEvent) {
         Stage currStage = (Stage) timeInput.getScene().getWindow();
 
@@ -115,36 +123,52 @@ public class CreationMenuController {
         fileChooser.getExtensionFilters().add(extFiler);
 
         File file = fileChooser.showOpenDialog(currStage);
-        file = new File(file.getName().replace(".xml",".mm"));
 
-        Composition composition = null;
-
-        if(file.getName().contains(".xml")) {
-            composition = Serializer.deserializeXML(file);
-        }else if (file.getName().contains(".mm"))
-            composition = Serializer.deserialize(file);
-
-        FXMLLoader loader = getLoader();
-
-        Parent root;
+        if (file != null) {
 
 
-        try {
-            root = loader.load();
+            if(pluginCheckBox.isSelected()){
+                File plugin = loadPlugin(currStage);
 
-            MainController controller = loader.getController();
+                Algorithm algorithm = PluginLoader.load(plugin.getAbsolutePath());
+                algorithm.decrypt(file);
+            }
 
-            controller.createComposition(composition);
+            File newFile = new File(file.getAbsolutePath());
 
-            Stage stage = new Stage();
+            //file = new File(file.getName().replace(".xml",".mm"));
 
-            stage.setScene(new Scene(root, 1920,1080));
-            stage.show();
+            Composition composition = null;
+
+            if(newFile.getName().contains(".xml")) {
+                composition = Serializer.deserializeXML(file);
+            }else if (newFile.getName().contains(".mm"))
+                composition = Serializer.deserialize(file);
+
+            FXMLLoader loader = getLoader();
+
+            Parent root;
+
+
+            try {
+                root = loader.load();
+
+                MainController controller = loader.getController();
+
+                controller.createComposition(composition);
+
+                Stage stage = new Stage();
+
+                stage.setScene(new Scene(root, 1920,1080));
+                stage.show();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            currStage.close();
+
+
         }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        currStage.close();
     }
 }
