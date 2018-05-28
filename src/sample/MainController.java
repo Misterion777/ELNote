@@ -165,22 +165,15 @@ public class MainController {
     }
 
 
-    private File saveFile(Stage currStage){
-
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Save composition");
-        FileChooser.ExtensionFilter extFiler = new FileChooser.ExtensionFilter("MM files, XML files (*.mm), (*.xml)","*.mm", "*.xml");
-        fileChooser.getExtensionFilters().add(extFiler);
-
-        return fileChooser.showSaveDialog(currStage);
-    }
-
     public void save(ActionEvent actionEvent) {
+
         Stage currStage = (Stage) harmonyCanvasesList.getScene().getWindow();
 
-        File file = saveFile(currStage);
+        Pipeline pipeline = new Pipeline(currStage, composition, pluginCheckBox.isSelected());
 
-        Serializer.serialize(composition,file);
+        pipeline.execute();
+
+
 
    /*     if(file.getName().contains(".xml")) {
             Serializer.serializeXML(composition,file);
@@ -188,21 +181,6 @@ public class MainController {
             Serializer.serialize(composition, file);
         } else
             Serializer.serialize(composition, new File(file.getAbsolutePath() + ".mm"));*/
-
-        if(pluginCheckBox.isSelected()){
-            try {
-                File encryptionPlugin = openPluginFile(currStage);
-
-                Algorithm algorithm = PluginLoader.load(encryptionPlugin.getAbsolutePath());
-
-                algorithm.encrypt(file);
-
-            } catch (NullPointerException e){
-                e.printStackTrace();
-            }
-
-        }
-
     }
 }
 
