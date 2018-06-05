@@ -1,6 +1,6 @@
 # ELNote
 Eli Lasy Note is extremely cool, nice and fast notation program!
-(actually it's just a course work for BSUIR yet full of bugs)
+(actually it's just a lab work for BSUIR yet full of bugs)
 
 Implemented functionality:
 * Composition can be created in all possible keys.
